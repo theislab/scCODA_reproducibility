@@ -10,10 +10,10 @@ import benchmark_utils as util
 # import paper_simulation_scripts.benchmark_utils as util
 
 
-dataset_path = "../data/threshold_determination/generated_datasets_005_balanced/"
+dataset_path = "../../data/threshold_determination/generated_datasets_threshold_determination/"
 dataset_path_server = '/home/icb/johannes.ostner/compositional_diff/benchmark_data/threshold_determination/generated_datasets_005_balanced/'
 
-save_path = "../data/threshold_determination/threshold_determination_005_balanced/"
+save_path = "../../data/threshold_determination/threshold_determination_results/"
 save_path_server = '/home/icb/johannes.ostner/compositional_diff/benchmark_results/threshold_determination_005_balanced/'
 
 models = ["scCODA"]

@@ -5,15 +5,15 @@ import sys
 sys.path.insert(0, '/home/icb/johannes.ostner/compositional_diff/scCODA/')
 
 # if running on server:
-import benchmark_utils as util
+import benchmarking.benchmark_utils as util
 # else:
 # import paper_simulation_scripts.benchmark_utils as util
 
 
-dataset_path = "../data/model_comparison/generated_datasets_new_005/"
+dataset_path = "../../data/model_comparison/generated_datasets_model_comparison/"
 dataset_path_server = '/home/icb/johannes.ostner/compositional_diff/benchmark_data/model_comparison/scdc_missing_datasets/'
 
-save_path = "../data/model_comparison/model_comparison_new_005/"
+save_path = "../../data/model_comparison/model_comparison_results/"
 save_path_server = '/home/icb/johannes.ostner/compositional_diff/benchmark_results/scdc_completion/'
 
 # Use all 10 models for comparison

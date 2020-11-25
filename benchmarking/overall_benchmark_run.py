@@ -5,15 +5,15 @@ import sys
 sys.path.insert(0, '/home/icb/johannes.ostner/compositional_diff/scCODA/')
 
 # if running on server:
-# import benchmark_utils as util
+import benchmarking.benchmark_utils as util
 # else:
-import paper_simulation_scripts.benchmark_utils as util
+# import paper_simulation_scripts.benchmark_utils as util
 
 
-dataset_path = "../data/overall_benchmark/generated_datasets_005/"
+dataset_path = "../../data/overall_benchmark/generated_datasets_overall_benchmark/"
 dataset_path_server = '/home/icb/johannes.ostner/compositional_diff/benchmark_data/overall_benchmark/generated_datasets_005/'
 
-save_path = "../data/benchmark_results/overall_benchmark_005/"
+save_path = "../../data/benchmark_results/overall_benchmark_results/"
 save_path_server = '/home/icb/johannes.ostner/compositional_diff/benchmark_results/overall_benchmark_005/'
 
 models = ["scCODA"]

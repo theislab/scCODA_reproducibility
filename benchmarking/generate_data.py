@@ -156,7 +156,7 @@ if __name__ == "main":
     fct_change = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 400, 600, 800, 1000]
     n_repetitions = 10
 
-    write_path = "../data/overall_benchmark/generated_datasets_005/"
+    write_path = "../../data/overall_benchmark/generated_datasets_overall_benchmark/"
     # write_path = "/home/icb/johannes.ostner/compositional_diff/benchmark_results/overall_benchmark_data/"
     file_name = "overall_data"
 
@@ -177,7 +177,7 @@ if __name__ == "main":
     fct_change = [1/3, 1/2, 1, 2, 3]
     n_repetitions = 20
 
-    write_path = "../data/model_comparison/generated_datasets_new_001/"
+    write_path = "../../data/model_comparison/generated_datasets_model_comparison/"
     # write_path = "/home/icb/johannes.ostner/compositional_diff/benchmark_results/model_comparison_data/"
     file_name = "model_comp_data"
 
@@ -198,7 +198,7 @@ if __name__ == "main":
     fct_change = [0.25, 0.5, 1]
     n_repetitions = 20
 
-    write_path = "../data/threshold_determination/generated_datasets_005_balanced/"
+    write_path = "../../data/threshold_determination/generated_datasets_threshold_determination"
     # write_path = "/home/icb/johannes.ostner/compositional_diff/benchmark_results/model_comparison_data/"
     file_name = "threshold_data"
 
