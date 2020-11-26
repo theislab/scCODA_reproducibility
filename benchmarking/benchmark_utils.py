@@ -42,7 +42,7 @@ def benchmark(data_path, save_path, models, benchmark_name="", server=False, kee
     # For all other models, only one results file with all results is generated
     batched_models = ["simple_dm", "scCODA", "scdc"]
 
-    # Parameters for each modelsc
+    # Parameters for each model
     for model_name in models:
         print(model_name)
 

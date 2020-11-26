@@ -1,7 +1,6 @@
 # Generates compositional datasets for benchmarks.
 
 import numpy as np
-import os
 import pickle as pkl
 import pandas as pd
 import itertools
