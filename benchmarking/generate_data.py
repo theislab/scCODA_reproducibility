@@ -5,6 +5,7 @@ import pickle as pkl
 import pandas as pd
 import itertools
 import sys
+import os
 
 # Insert path to scCODA package for running on server
 sys.path.insert(0, '/home/icb/johannes.ostner/compositional_diff/scCODA/')
@@ -142,7 +143,6 @@ def generate_compositional_datasets(n_cell_types, n_cells, n_samples,
     return out
 
 
-#%%
 if __name__ == "main":
     # generate data for overall benchamark
 
@@ -155,7 +155,7 @@ if __name__ == "main":
     fct_change = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 400, 600, 800, 1000]
     n_repetitions = 10
 
-    write_path = "../../data/overall_benchmark/generated_datasets_overall_benchmark/"
+    write_path = os.path.realpath("../../data/overall_benchmark/generated_datasets_overall_benchmark/")
     # write_path = "/home/icb/johannes.ostner/compositional_diff/benchmark_results/overall_benchmark_data/"
     file_name = "overall_data"
 
@@ -176,7 +176,7 @@ if __name__ == "main":
     fct_change = [1/3, 1/2, 1, 2, 3]
     n_repetitions = 20
 
-    write_path = "../../data/model_comparison/generated_datasets_model_comparison/"
+    write_path = os.path.realpath("../../data/model_comparison/generated_datasets_model_comparison/")
     # write_path = "/home/icb/johannes.ostner/compositional_diff/benchmark_results/model_comparison_data/"
     file_name = "model_comp_data"
 
@@ -197,7 +197,7 @@ if __name__ == "main":
     fct_change = [0.25, 0.5, 1]
     n_repetitions = 20
 
-    write_path = "../../data/threshold_determination/generated_datasets_threshold_determination"
+    write_path = os.path.realpath("../../data/threshold_determination/generated_datasets_threshold_determination")
     # write_path = "/home/icb/johannes.ostner/compositional_diff/benchmark_results/model_comparison_data/"
     file_name = "threshold_data"
 

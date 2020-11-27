@@ -1,3 +1,4 @@
+# Only relevant for server execution
 import pickle as pkl
 import sys
 

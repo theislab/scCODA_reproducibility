@@ -23,24 +23,30 @@ def benchmark_datasets_to_csv(pickle_path, uni_path):
 
     data_names = os.listdir(pickle_path)
 
-    all_parameters = []
-    all_datasets = {}
+    if len(data_names) > 0:
 
-    for name in data_names:
-        with open(pickle_path + name, "rb") as f:
-            data = pkl.load(f)
+        all_parameters = []
+        all_datasets = {}
 
-        all_parameters.append(data["parameters"])
+        for name in data_names:
+            with open(pickle_path + name, "rb") as f:
+                data = pkl.load(f)
 
-        for d in data["datasets"]:
-            all_datasets[k] = d
-            k += 1
+            all_parameters.append(data["parameters"])
 
-    concat = ad.concat(all_datasets, label="dataset_no")
-    params = pd.concat(all_parameters, ignore_index=True)
+            for d in data["datasets"]:
+                all_datasets[k] = d
+                k += 1
 
-    params.to_csv(uni_path + "generation_parameters")
-    concat.write_h5ad(uni_path + "generated_data")
+        concat = ad.concat(all_datasets, label="dataset_no")
+        params = pd.concat(all_parameters, ignore_index=True)
+
+        params.to_csv(uni_path + "generation_parameters")
+        concat.write_h5ad(uni_path + "generated_data")
+
+    else:
+        print(f"no files in {pickle_path}. skipping...")
+
 
 
 def benchmark_datasets_to_pickle(uni_path, pickle_path):
@@ -92,26 +98,49 @@ def benchmark_results_to_csv(pickle_path, uni_path):
 
     data_names = os.listdir(pickle_path)
 
-    all_results = []
-    sccoda_effects = []
+    if len(data_names) > 0:
 
-    for name in data_names:
-        with open(pickle_path + name, "rb") as f:
-            temp = pkl.load(f)
+        all_results = []
+        sccoda_effects = []
 
-        if name.startswith("sccoda"):
-            all_results.append(temp["results"])
-            sccoda_effects = sccoda_effects + temp["effects"]
+        for name in data_names:
+            with open(pickle_path + name, "rb") as f:
+                temp = pkl.load(f)
 
-        elif isinstance(temp, dict):
-            all_results.append(temp["results"])
+            if name.startswith("sccoda"):
+                all_results.append(temp["results"])
+                sccoda_effects = sccoda_effects + temp["effects"]
 
-        else:
-            all_results.append(temp)
+            elif isinstance(temp, dict):
+                all_results.append(temp["results"])
 
-    all_results = pd.concat(all_results)
-    all_results.to_csv(uni_path + "benchmark_results")
+            else:
+                all_results.append(temp)
 
-    sccoda_conc = pd.concat(sccoda_effects, keys=list(range(len(sccoda_effects))), names=["dataset", "Covariate", "Cell Type"])
-    sccoda_conc.to_csv(uni_path + "sccoda_effects")
+        all_results = pd.concat(all_results)
+        all_results.to_csv(uni_path + "benchmark_results")
+
+        sccoda_conc = pd.concat(sccoda_effects, keys=list(range(len(sccoda_effects))), names=["dataset", "Covariate", "Cell Type"])
+        sccoda_conc.to_csv(uni_path + "sccoda_effects")
+
+    else:
+        print(f"no files in {pickle_path}. skipping...")
+
+
+if __name__ == "main":
+
+    benchmark_names = ["overall_benchmark", "model_comparison_benchmark", "threshold_determination_benchmark"]
+
+    for name in benchmark_names:
+        print(f"Converting {name}...")
+
+        datasets_path = os.path.realpath(f"../../data/{name}/generated_datasets_{name}/")
+        results_path = os.path.realpath(f"../../data/{name}/{name}_results/")
+        convert_path = os.path.realpath(f"../../data/{name}/data_{name}/")
+
+        print("Converting generated data...")
+        benchmark_datasets_to_csv(datasets_path, convert_path)
+
+        print("converting results...")
+        benchmark_results_to_csv(results_path, convert_path)
 
