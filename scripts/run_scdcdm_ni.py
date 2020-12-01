@@ -12,7 +12,7 @@ from scdcdm.util import cell_composition_data as dat
 
 
 #set data path
-data_path = '/storage/groups/ml01/workspace/maren.buettner/Schubert_scDC/data/'
+data_path = './data/'
 
 #read data
 meta = pd.read_csv(data_path + 'meta_processed.csv')
