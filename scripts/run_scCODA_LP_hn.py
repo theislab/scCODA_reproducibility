@@ -40,9 +40,9 @@ for baseline in ['Post-capillary Venules', 'Inflammatory Monocytes']: #Glia
         sim_results = model_gut.sample_hmc(n_burnin=20000, num_results=n_iter)
         sig_effects = sim_results.effect_df.loc[sim_results.effect_df["Final Parameter"] != 0]
         az.plot_density(sim_results, var_names="beta")
-        pl.savefig(data_path + 'results_hni_' + baseline + '_' + str(n_iter) + '_density.pdf')
+        pl.savefig(data_path + 'results_hn_' + baseline + '_' + str(n_iter) + '_density.pdf')
         az.plot_trace(sim_results, var_names="beta")
-        pl.savefig(data_path + 'results_hni_' + baseline + '_' + str(n_iter) + '_trace.pdf')
+        pl.savefig(data_path + 'results_hn_' + baseline + '_' + str(n_iter) + '_trace.pdf')
         print(sig_effects)  
         #prepare result table to save to file
         sig_effects = sig_effects.reset_index()
@@ -50,7 +50,7 @@ for baseline in ['Post-capillary Venules', 'Inflammatory Monocytes']: #Glia
         sig_effects['Health'] = sig_effects['Health'].cat.rename_categories({'Health[T.Inflamed]': 'Inflamed',
                                                                            'Health[T.Non-inflamed]': 'Non-inflamed'})
         sig_effects['LP_test'] = sig_effects['Cell Type']
-        sig_effects.to_csv(data_path + 'results_hni_' + baseline + '_' + str(n_iter) + '.csv')
+        sig_effects.to_csv(data_path + 'results_hn_' + baseline + '_' + str(n_iter) + '.csv')
         #sim_results.save(path_to_file = data_path + 'results_' + baseline + '_' + str(n_iter) +'.pkl')
 
 
