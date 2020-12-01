@@ -30,8 +30,8 @@ tmp_lp = tmp.loc[tmp['Location']=='LP']
 
 test_data = dat.from_pandas(tmp_lp, covariate_columns=["Health", 'Subject', 'Location', 'Replicate'])
 print('Test data created')
-#model set up (use three different references: Glia, Endothelial, and Cycling Monocytes
-for baseline in ['MT-hi', 'Inflammatory Fibroblasts', 'Cycling Monocytes']: #Glia
+#model set up (use three different references: MT-hi, Inflammatory Fibroblasts, and Cycling Monocytes)
+for baseline in ['MT-hi', 'Inflammatory Fibroblasts', 'Cycling Monocytes']: 
     test_data_hn = test_data[test_data.obs['Health'] != 'Healthy'].copy()
     model_gut = mod.CompositionalAnalysis(test_data_hn, formula="Health", baseline_index=baseline)
     print(baseline + ' cells.')
