@@ -237,7 +237,7 @@ def model_on_one_datafile(file_path, model_name, keep_sccoda_results=False, *arg
             # Init model. Baseline index is always the last cell type
             mod = om.SimpleModel(covariate_matrix=np.array(covariate_matrix), data_matrix=data_matrix,
                                  cell_types=cell_types, covariate_names=covariate_names, formula=formula,
-                                 baseline_index=K-1)
+                                 reference_cell_type=K-1)
 
             # Run HMC sampling
             result_temp = mod.sample_hmc(*args, **kwargs)
@@ -282,7 +282,7 @@ def model_on_one_datafile(file_path, model_name, keep_sccoda_results=False, *arg
             # Init model. Baseline index is always the last cell type
             mod = model.BaselineModel(covariate_matrix=np.array(covariate_matrix), data_matrix=data_matrix,
                                       cell_types=cell_types, covariate_names=covariate_names, formula=formula,
-                                      baseline_index=K-1)
+                                      reference_cell_type=K-1)
 
             # Run HMC sampling, get results
             result_temp = mod.sample_hmc(*args, **kwargs)

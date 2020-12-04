@@ -17,7 +17,8 @@ The analysis notebooks can be run with the files `benchmark_results` and `sccoda
 
 1. Navigate to the parent directory of `scCODA_reproducibility`
 
-2.  a) Download the benchmark data and results from **TODO!!!!** and unpack them here
+2.  a) Download the benchmark data and results from [zenodo](https://doi.org/10.5281/zenodo.4305907)
+ and unpack them here
 
     **or**
     
@@ -26,7 +27,7 @@ The analysis notebooks can be run with the files `benchmark_results` and `sccoda
     ```
     <parent_directory>
     |_  <scCODA_reproducibility>
-    |_  data
+    |_  sccoda_benchmark_data
         |_  overall_benchmark
             |_  data_overall_benchmark
             |_  overall_benchmark_results
