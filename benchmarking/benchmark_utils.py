@@ -46,20 +46,33 @@ def benchmark(data_path, save_path, models, benchmark_name="", server=False, kee
     for model_name in models:
         print(model_name)
 
+        if server:
+            r_home = "/home/icb/johannes.ostner/anaconda3/lib/R"
+            r_path = r"/home/icb/johannes.ostner/anaconda3/lib/R/bin"
+        else:
+            r_home = "C:/Program Files/R/R-4.0.3"
+            r_path = r"C:/Program Files/R/R-4.0.3/bin/x64"
+
         if model_name == "ALDEx2_alr":
-            kwargs = {"server": server,
-                      "method": "we.eBH",
-                      "mc_samples": 128,
-                      "denom": [5],
-                      "alpha": 0.05,
-                      "fdr_correct": False}
+            kwargs = {
+                "r_home": r_home,
+                "r_path": r_path,
+                "method": "we.eBH",
+                "mc_samples": 128,
+                "denom": [5],
+                "alpha": 0.05,
+                "fdr_correct": False
+            }
 
         elif model_name == "ALDEx2":
-            kwargs = {"server": server,
-                      "method": "we.eBH",
-                      "mc_samples": 128,
-                      "alpha": 0.05,
-                      "fdr_correct": False}
+            kwargs = {
+                "r_home": r_home,
+                "r_path": r_path,
+                "method": "we.eBH",
+                "mc_samples": 128,
+                "alpha": 0.05,
+                "fdr_correct": False
+            }
 
         elif model_name in ["simple_dm", "scCODA"]:
             kwargs = {"num_results": 20000,
@@ -71,11 +84,14 @@ def benchmark(data_path, save_path, models, benchmark_name="", server=False, kee
             kwargs = {"reference_index": 4,
                       "alpha": 0.05,
                       "fdr_correct": True}
-        elif model_name in ["Haber", "ttest", "clr_ttest", "dirichreg"]:
+        elif model_name in ["Haber", "ttest", "clr_ttest"]:
             kwargs = {"alpha": 0.05,
                       "fdr_correct": True}
-        elif model_name == "scdc":
-            kwargs = {"server": server}
+        elif model_name in ["scdc", "dirichreg"]:
+            kwargs = {
+                "r_home": r_home,
+                "r_path": r_path,
+            }
         else:
             kwargs = {}
 
