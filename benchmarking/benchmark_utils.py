@@ -12,10 +12,10 @@ sys.path.insert(0, '/home/icb/johannes.ostner/compositional_diff/scCODA/')
 
 from sccoda.util import data_generation as gen
 from sccoda.model import other_models as om
-from sccoda.model import dirichlet_models as model
+from sccoda.model import scCODA_model as model
 
 
-def benchmark(data_path, save_path, models, benchmark_name="", server=False, keep_sccoda_results=False):
+def benchmark(data_path, save_path, models, benchmark_name="", server=False, keep_results=False, alpha=0.05):
     """
     Run a benchmark. All models in parameter "models" are applied to all datasets in "data_path".
 
@@ -50,8 +50,8 @@ def benchmark(data_path, save_path, models, benchmark_name="", server=False, kee
             r_home = "/home/icb/johannes.ostner/anaconda3/lib/R"
             r_path = r"/home/icb/johannes.ostner/anaconda3/lib/R/bin"
         else:
-            r_home = "C:/Program Files/R/R-4.0.3"
-            r_path = r"C:/Program Files/R/R-4.0.3/bin/x64"
+            r_home = "/Library/Frameworks/R.framework/Resources"
+            r_path = r"/Library/Frameworks/R.framework/Resources/bin"
 
         if model_name == "ALDEx2_alr":
             kwargs = {
@@ -60,8 +60,9 @@ def benchmark(data_path, save_path, models, benchmark_name="", server=False, kee
                 "method": "we.eBH",
                 "mc_samples": 128,
                 "denom": [5],
-                "alpha": 0.05,
-                "fdr_correct": False
+                "alpha": alpha,
+                "fdr_correct": False,
+                "keep_results": keep_results
             }
 
         elif model_name == "ALDEx2":
@@ -70,27 +71,58 @@ def benchmark(data_path, save_path, models, benchmark_name="", server=False, kee
                 "r_path": r_path,
                 "method": "we.eBH",
                 "mc_samples": 128,
-                "alpha": 0.05,
-                "fdr_correct": False
+                "alpha": alpha,
+                "fdr_correct": False,
+                "keep_results": keep_results
             }
 
         elif model_name in ["simple_dm", "scCODA"]:
             kwargs = {"num_results": 20000,
-                      "n_burnin": 5000,
+                      "num_burnin": 5000,
                       "num_adapt_steps": 4000,
-                      "keep_sccoda_results": keep_sccoda_results}
+                      "keep_results": keep_results,
+                      "alpha": alpha,
+                      }
 
         elif model_name in ["alr_ttest", "alr_wilcoxon"]:
-            kwargs = {"reference_index": 4,
-                      "alpha": 0.05,
-                      "fdr_correct": True}
+            kwargs = {"reference_cell_type": 4,
+                      "alpha": alpha,
+                      "fdr_correct": True,
+                      "keep_results": keep_results
+                      }
         elif model_name in ["Haber", "ttest", "clr_ttest"]:
-            kwargs = {"alpha": 0.05,
-                      "fdr_correct": True}
-        elif model_name in ["scdc", "dirichreg"]:
+            kwargs = {"alpha": alpha,
+                      "fdr_correct": True,
+                      "keep_results": keep_results
+                      }
+        elif model_name in ["scdc", "dirichreg", "BetaBinomial"]:
             kwargs = {
                 "r_home": r_home,
                 "r_path": r_path,
+                "keep_results": keep_results,
+                "alpha": alpha
+            }
+        elif model_name =="ancom":
+            kwargs = {
+                "keep_results": keep_results,
+                "alpha": alpha
+            }
+        elif model_name == "ANCOMBC":
+            kwargs = {
+                "r_home": r_home,
+                "r_path": r_path,
+                "fdr_correct": False,
+                "keep_results": keep_results,
+                "alpha": alpha
+            }
+        elif model_name == "ANCOMBC_holm":
+            kwargs = {
+                "r_home": r_home,
+                "r_path": r_path,
+                "fdr_correct": False,
+                "keep_results": keep_results,
+                "method": "holm",
+                "alpha": alpha
             }
         else:
             kwargs = {}
@@ -104,19 +136,18 @@ def benchmark(data_path, save_path, models, benchmark_name="", server=False, kee
                 if server:
                     bash_loc = f"/home/icb/johannes.ostner/compositional_diff/benchmark_scripts/{benchmark_name}"
                     bash_name = f"{benchmark_name}_{model_name}_{count}"
-                    script_location = "/home/icb/johannes.ostner/compositional_diff/benchmark_scripts/paper_simulation_scripts/model_one_job_batched.py"
-                    arguments = [data_path, save_path, model_name, count, keep_sccoda_results]
+                    script_location = "/home/icb/johannes.ostner/compositional_diff/benchmarking/model_one_job_batched.py"
+                    arguments = [data_path, save_path, model_name, alpha, count, keep_results]
 
                     execute_on_server(bash_loc, bash_name, script_location, arguments)
                 # Locally, just execute and save
                 else:
                     file_name = os.listdir(data_path)[count]
 
-                    if keep_sccoda_results:
+                    if keep_results:
                         results, effects = model_on_one_datafile(data_path + file_name, model_name, **kwargs)
                         results = get_scores(results)
                         save = {"results": results, "effects": effects}
-                        print(save)
 
                     else:
                         results = model_on_one_datafile(data_path + file_name, model_name, **kwargs)
@@ -132,21 +163,24 @@ def benchmark(data_path, save_path, models, benchmark_name="", server=False, kee
             if server:
                 bash_loc = f"/home/icb/johannes.ostner/compositional_diff/benchmark_scripts/{benchmark_name}"
                 bash_name = f"{benchmark_name}_{model_name}"
-                script_location = "/home/icb/johannes.ostner/compositional_diff/benchmark_scripts/paper_simulation_scripts/model_one_job.py"
-                arguments = [data_path, save_path, model_name]
+                script_location = "/home/icb/johannes.ostner/compositional_diff/benchmarking/model_one_job.py"
+                arguments = [data_path, save_path, model_name, alpha]
 
                 execute_on_server(bash_loc, bash_name, script_location, arguments)
             # Locally, just execute and save
             else:
                 results = model_all_datasets(data_path, model_name, **kwargs)
 
-                results = get_scores(results)
+                if keep_results:
+                    results["results"] = get_scores(results["results"])
+                else:
+                    results = get_scores(results)
 
                 with open(save_path + model_name + "_results.pkl", "wb") as f:
                     pkl.dump(results, f)
 
 
-def model_on_one_datafile(file_path, model_name, keep_sccoda_results=False, *args, **kwargs):
+def model_on_one_datafile(file_path, model_name, keep_results=False, *args, **kwargs):
     """
     Run a model on one datafile from generate_data.generate_compositional_datasets
 
@@ -156,7 +190,7 @@ def model_on_one_datafile(file_path, model_name, keep_sccoda_results=False, *arg
         path to dataset
     model_name: str
         model name
-    keep_sccoda_results: bool
+    keep_results: bool
         Whether betas_df from the scCODA result should be returned as well (for threshold benchmark)
     args:
         Passed to the model execution function
@@ -183,6 +217,7 @@ def model_on_one_datafile(file_path, model_name, keep_sccoda_results=False, *arg
 
     # Parameters for model evaluation, not execution
     alpha = kwargs.pop("alpha", 0.05)
+    tau = kwargs.pop("tau", 0.02)
     fdr_correct = kwargs.pop("fdr_correct", True)
 
     # initialize list for beta_dfs
@@ -192,46 +227,114 @@ def model_on_one_datafile(file_path, model_name, keep_sccoda_results=False, *arg
     for d in range(len(data["datasets"])):
 
         model_completed = True
+        K = fin_df["n_cell_types"].iloc[d]
+        increase = fin_df["Increase"].iloc[d]
+        try:
+            inc = len(increase)
+            ground_truth = np.array(increase)
+            ground_truth = np.pad(ground_truth, (0, K - inc))
+        except TypeError:
+            ground_truth = np.zeros((K))
+            ground_truth[0] = increase
 
-        if model_name == "Haber":
+        gt = (ground_truth != 0)
+
+        if model_name in ["Haber"]:
             mod = om.HaberModel(data["datasets"][d])
             mod.fit_model()
-            tp, tn, fp, fn = mod.eval_model(alpha=alpha, fdr_correct=fdr_correct)
+            tp, tn, fp, fn = mod.eval_model(ground_truth=gt, alpha=alpha, fdr_correct=fdr_correct)
+            if keep_results:
+                effect_dfs.append(pd.DataFrame({
+                    "Cell Type": [str(x) for x in np.arange(K)],
+                    "p value": mod.p_val,
+                }))
 
         elif model_name == "ttest":
             mod = om.TTest(data["datasets"][d])
             mod.fit_model()
-            tp, tn, fp, fn = mod.eval_model(alpha=alpha, fdr_correct=fdr_correct)
+            tp, tn, fp, fn = mod.eval_model(ground_truth=gt, alpha=alpha, fdr_correct=fdr_correct)
+            if keep_results:
+                effect_dfs.append(pd.DataFrame({
+                    "Cell Type": [str(x) for x in np.arange(K)],
+                    "p value": mod.p_val,
+                }))
 
         elif model_name == "clr_ttest":
             mod = om.CLR_ttest(data["datasets"][d])
             mod.fit_model()
-            tp, tn, fp, fn = mod.eval_model(alpha=alpha, fdr_correct=fdr_correct)
+            tp, tn, fp, fn = mod.eval_model(ground_truth=gt, alpha=alpha, fdr_correct=fdr_correct)
+            if keep_results:
+                effect_dfs.append(pd.DataFrame({
+                    "Cell Type": [str(x) for x in np.arange(K)],
+                    "p value": mod.p_val,
+                }))
 
         elif model_name in ["ALDEx2", "ALDEx2_alr"]:
             mod = om.ALDEx2Model(data["datasets"][d])
             mod.fit_model(*args, **kwargs)
-            tp, tn, fp, fn = mod.eval_model(alpha=alpha, fdr_correct=fdr_correct)
+            tp, tn, fp, fn = mod.eval_model(ground_truth=gt, alpha=alpha, fdr_correct=fdr_correct)
+            if keep_results:
+                effect_dfs.append(pd.DataFrame({
+                    "Cell Type": [str(x) for x in np.arange(K)],
+                    "p value": mod.p_val,
+                }))
 
         elif model_name == "alr_ttest":
             mod = om.ALRModel_ttest(data["datasets"][d])
             mod.fit_model(*args, **kwargs)
-            tp, tn, fp, fn = mod.eval_model(alpha=alpha, fdr_correct=fdr_correct)
+            tp, tn, fp, fn = mod.eval_model(ground_truth=gt, alpha=alpha, fdr_correct=fdr_correct)
+            if keep_results:
+                effect_dfs.append(pd.DataFrame({
+                    "Cell Type": [str(x) for x in np.arange(K)],
+                    "p value": mod.p_val,
+                }))
 
         elif model_name == "alr_wilcoxon":
             mod = om.ALRModel_wilcoxon(data["datasets"][d])
             mod.fit_model(*args, **kwargs)
-            tp, tn, fp, fn = mod.eval_model(alpha=alpha, fdr_correct=fdr_correct)
+            tp, tn, fp, fn = mod.eval_model(ground_truth=gt, alpha=alpha, fdr_correct=fdr_correct)
+            if keep_results:
+                effect_dfs.append(pd.DataFrame({
+                    "Cell Type": [str(x) for x in np.arange(K)],
+                    "p value": mod.p_val,
+                }))
 
         elif model_name == "ancom":
             mod = om.AncomModel(data["datasets"][d])
-            mod.fit_model()
-            tp, tn, fp, fn = mod.eval_model()
+            mod.fit_model(alpha=alpha, tau=tau)
+            tp, tn, fp, fn = mod.eval_model(ground_truth=gt)
+            if keep_results:
+                effect_dfs.append(mod.ancom_out)
+
+        elif model_name in ["ANCOMBC", "ANCOMBC_holm"]:
+            mod = om.ANCOMBCModel(data["datasets"][d])
+            mod.fit_model(*args, **kwargs)
+            tp, tn, fp, fn = mod.eval_model(ground_truth=gt)
+            if keep_results:
+                effect_dfs.append(pd.DataFrame({
+                    "Cell Type": [str(x) for x in np.arange(K)],
+                    "p value": mod.p_val,
+                }))
+
+        elif model_name == "BetaBinomial":
+            mod = om.BetaBinomialModel(data["datasets"][d])
+            mod.fit_model(*args, **kwargs)
+            tp, tn, fp, fn = mod.eval_model(ground_truth=gt)
+            if keep_results:
+                effect_dfs.append(pd.DataFrame({
+                    "Cell Type": [str(x) for x in np.arange(K)],
+                    "p value": mod.p_val,
+                }))
 
         elif model_name == "dirichreg":
             mod = om.DirichRegModel(data["datasets"][d])
             mod.fit_model(*args, **kwargs)
-            tp, tn, fp, fn = mod.eval_model(alpha=alpha, fdr_correct=fdr_correct)
+            tp, tn, fp, fn = mod.eval_model(ground_truth=gt, alpha=alpha, fdr_correct=fdr_correct)
+            if keep_results:
+                effect_dfs.append(pd.DataFrame({
+                    "Cell Type": [str(x) for x in np.arange(K)],
+                    "p value": mod.p_val,
+                }))
 
         elif model_name == "simple_dm":
             # Build covariance matrix for simple dm and extract comp. data
@@ -257,25 +360,27 @@ def model_on_one_datafile(file_path, model_name, keep_sccoda_results=False, *arg
 
             # Run HMC sampling
             result_temp = mod.sample_hmc(*args, **kwargs)
-            alphas_df, betas_df = result_temp.summary_prepare(credible_interval=0.95)
+            alphas_df, betas_df = result_temp.summary_prepare(hdi_prob=1-alpha)
 
             # Effects are significant if 0 not in 95% HDI, set non-sig. effects to 0
-            final_betas = np.where((betas_df.loc[:, "HDI 3%"] < 0) &
-                                   (betas_df.loc[:, "HDI 97%"] > 0),
+            a_cols = [x for x in betas_df.columns if x.startswith("HDI")]
+            final_betas = np.where((betas_df.loc[:, a_cols[0]] < 0) &
+                                   (betas_df.loc[:, a_cols[1]] > 0),
                                    0,
                                    betas_df.loc[:, "Final Parameter"])
 
             # Compare found significances to ground truth (only first cell type significant)
             # Get true positives, true negatives, false positives, false negatives
-            ks = list(range(K))[1:]
+            true_indices = np.where(gt == True)[0]
+            false_indices = np.where(gt == False)[0]
 
-            tp = sum([final_betas[0] != 0])
-            fn = sum([final_betas[0] == 0])
-            tn = sum([final_betas[k] == 0 for k in ks])
-            fp = sum([final_betas[k] != 0 for k in ks])
+            tp = sum(final_betas[true_indices] != 0)
+            fn = sum(final_betas[true_indices] == 0)
+            tn = sum(final_betas[false_indices] == 0)
+            fp = sum(final_betas[false_indices] != 0)
 
             # append betas_df to output list
-            if keep_sccoda_results:
+            if keep_results:
                 effect_dfs.append(betas_df)
 
         elif model_name == "scCODA":
@@ -296,54 +401,59 @@ def model_on_one_datafile(file_path, model_name, keep_sccoda_results=False, *arg
             covariate_matrix = covariate_matrix[:, 1:]
 
             # Init model. Baseline index is always the last cell type
-            mod = model.BaselineModel(covariate_matrix=np.array(covariate_matrix), data_matrix=data_matrix,
+            mod = model.scCODAModel(covariate_matrix=np.array(covariate_matrix), data_matrix=data_matrix,
                                       cell_types=cell_types, covariate_names=covariate_names, formula=formula,
                                       reference_cell_type=K-1)
 
             # Run HMC sampling, get results
             result_temp = mod.sample_hmc(*args, **kwargs)
-            alphas_df, betas_df = result_temp.summary_prepare(credible_interval=0.95)
-            final_betas = betas_df.loc[:, "Final Parameter"].tolist()
+            alphas_df, betas_df = result_temp.summary_prepare(est_fdr=alpha)
+            final_betas = np.array(betas_df.loc[:, "Final Parameter"])
 
             # Compare found significances to ground truth (only first cell type significant)
             # Get true positives, true negatives, false positives, false negatives
-            ks = list(range(K))[1:]
+            true_indices = np.where(gt == True)[0]
+            false_indices = np.where(gt == False)[0]
 
-            tp = sum([final_betas[0] != 0])
-            fn = sum([final_betas[0] == 0])
-            tn = sum([final_betas[k] == 0 for k in ks])
-            fp = sum([final_betas[k] != 0 for k in ks])
+            tp = sum(final_betas[true_indices] != 0)
+            fn = sum(final_betas[true_indices] == 0)
+            tn = sum(final_betas[false_indices] == 0)
+            fp = sum(final_betas[false_indices] != 0)
 
             # append betas_df to output list
-            if keep_sccoda_results:
+            if keep_results:
                 effect_dfs.append(betas_df)
 
         elif model_name == "scdc":
             mod = om.scdney_model(data["datasets"][d])
             try:
-                tp, tn, fp, fn = mod.analyze(server=kwargs["server"])[1]
-            except rpy2.rinterface_lib.embedded.RRuntimeError:
-                fin_df = fin_df.drop(d)
+                effect, (tp, tn, fp, fn) = mod.analyze(
+                    r_home=kwargs["r_home"],
+                    r_path=kwargs["r_path"],
+                    ground_truth=gt,
+                    alpha=alpha
+                )
+                if keep_results:
+                    effect_dfs.append(effect)
+            except:
+                print("Error encountered!")
                 tp, tn, fp, fn = (np.nan, np.nan, np.nan, np.nan)
-                model_completed = False
 
         else:
             raise ValueError("Invalid model name specified!")
 
-        # Add to result df
-        if model_completed:
-            fin_df.loc[d, "tp"] = tp
-            fin_df.loc[d, "fp"] = fp
-            fin_df.loc[d, "tn"] = tn
-            fin_df.loc[d, "fn"] = fn
+        fin_df.loc[d, "tp"] = tp
+        fin_df.loc[d, "fp"] = fp
+        fin_df.loc[d, "tn"] = tn
+        fin_df.loc[d, "fn"] = fn
 
-    if keep_sccoda_results:
+    if keep_results:
         return fin_df, effect_dfs
     else:
         return fin_df
 
 
-def model_all_datasets(directory, model_name, *args, **kwargs):
+def model_all_datasets(directory, model_name, keep_results=False, *args, **kwargs):
     """
     Runs one model on all dataset files in a directory
 
@@ -369,24 +479,37 @@ def model_all_datasets(directory, model_name, *args, **kwargs):
     l = len(file_names)
     k = 1
 
-    # Initialize result df
-    simulation_parameters = ['n_cell_types', 'n_cells',
-                             'n_controls', 'n_cases',
-                             'Base', 'Increase', 'log-fold increase',
-                             'b_true', 'w_true']
-    col_names = simulation_parameters + ["tp", "tn", "fp", "fn", "model"]
-    results = pd.DataFrame(columns=col_names)
+    results = []
 
     # Run model on all files, coerce results
-    for name in file_names:
-        print(f"{k}/{l}")
+    if keep_results:
+        effects = []
+        for name in file_names:
+            print(f"{k}/{l}")
 
-        res = model_on_one_datafile(directory+name, model_name, *args, **kwargs)
 
-        results = results.append(res)
-        k += 1
+            res, eff = model_on_one_datafile(directory + name, model_name, keep_results=True, *args, **kwargs)
+            results.append(res)
+            effects.extend(eff)
+            k += 1
 
-    return results
+        results_df = pd.concat(results)
+        out = {"results": results_df, "effects": effects}
+
+        return out
+
+    else:
+        for name in file_names:
+            print(f"{k}/{l}")
+
+            res = model_on_one_datafile(directory+name, model_name, keep_results=False, *args, **kwargs)
+
+            results.append(res)
+            k += 1
+
+        results_df = pd.concat(results)
+
+        return results_df
 
 
 def get_scores(df):
@@ -401,7 +524,7 @@ def get_scores(df):
     Returns
     -------
     df: DataFrame
-        Same df with added columns tpr, tnr, precision, accuracy, younden, f1_score, mcc
+        Same df with added columns tpr, tnr, precision, accuracy, youden, f1_score, mcc
     """
     tp = df["tp"].astype("float64")
     tn = df["tn"].astype("float64")
@@ -416,7 +539,7 @@ def get_scores(df):
     df["precision"] = precision
     fdr = (fp / (tp + fp)).fillna(0)
     df["fdr"] = fdr
-    acc = (tp + tn) / (tp + tn + fp + fn).fillna(0)
+    acc = ((tp + tn) / (tp + tn + fp + fn)).fillna(0)
     df["accuracy"] = acc
 
     df["youden"] = tpr + tnr - 1
@@ -525,15 +648,15 @@ def execute_on_server(bash_loction, bash_name, script_location, arguments,
         fh.writelines("#!/bin/bash\n")
         fh.writelines(f"#SBATCH -o {bash_loction}{bash_name}_out.o\n")
         fh.writelines(f"#SBATCH -e {bash_loction}{bash_name}_error.e\n")
-        fh.writelines("#SBATCH -p icb_cpu\n")
-        fh.writelines("#SBATCH --exclude=ibis-ceph-[002-006,008-019],ibis216-010-[011-012,020-037,051,064],icb-rsrv[05-06,08],ibis216-224-[010-011]\n")
-        fh.writelines("#SBATCH --constraint='opteron_6378'")
+        fh.writelines("#SBATCH -p cpu_p\n")
+        fh.writelines("#SBATCH --constraint='avx'\n")
+        fh.writelines("#SBATCH --exclude='ibis216-010-[035-037,064]'\n")
         fh.writelines("#SBATCH -c 1\n")
         fh.writelines("#SBATCH --mem=5000\n")
         fh.writelines("#SBATCH --nice=10000\n")
-        fh.writelines("#SBATCH -t 2-00:00:00\n")
+        fh.writelines("#SBATCH -t 3-00:00:00\n")
 
-        execute_line = f"/home/icb/johannes.ostner/anaconda3/bin/python {script_location} "
+        execute_line = f"{python_path} {script_location} "
         for arg in arguments:
             execute_line = execute_line + str(arg).replace(" ", "") + " "
         fh.writelines(execute_line)

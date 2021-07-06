@@ -57,11 +57,32 @@ def generate_compositional_datasets(n_cell_types, n_cells, n_samples,
     """
 
     # Cenerate list of all parameter combinations
+
     if mode == "absolute":
-        simulation_params = list(itertools.product(n_cell_types, n_cells, n_samples, fct_base, fct_change))
+        if n_cells == "adaptive":
+            temp_params = list(itertools.product(n_cell_types, n_samples, fct_base, fct_change))
+            simulation_params = []
+            for p in temp_params:
+                p = list(p)
+                n_cells = p[0] * p[2]
+                p = [p[0], n_cells, p[1], p[2], p[3]]
+                simulation_params.append(tuple(p))
+        else:
+            simulation_params = list(itertools.product(n_cell_types, n_cells, n_samples, fct_base, fct_change))
+
     elif mode == "relative":
         # For relative mode, we need to calculate the change for each parameter set separately
-        temp_params = list(itertools.product(n_cell_types, n_cells, n_samples, fct_base))
+        if n_cells == "adaptive":
+            temp_params_ = list(itertools.product(n_cell_types, n_samples, fct_base))
+            temp_params = []
+            for p in temp_params_:
+                p = list(p)
+                n_cells = p[0] * p[2]
+                p = [p[0], n_cells, p[1], p[2]]
+                temp_params.append(tuple(p))
+        else:
+            temp_params = list(itertools.product(n_cell_types, n_cells, n_samples, fct_base))
+
         simulation_params = []
         for p in temp_params:
             p = list(p)
@@ -70,14 +91,18 @@ def generate_compositional_datasets(n_cell_types, n_cells, n_samples,
             if p[3] == "balanced":
                 p[3] = p[1] * (1 / p[0])
             for c in fct_change:
-                base = p[3]
-                change = base * c
-                # bugfix if ct1 makes up all the cells
-                if base + change == p[1]:
-                    change = change - 1
-                p_ = p + [change]
+                base = np.round(gen.counts_from_first(p[3], p[1], p[0]), 3)
+                n_da = len(c)
+                change = base[0] * np.array(c)
+
+                # bugfix if da cell types make up all the cells
+                if np.sum(base[:n_da] + change) >= p[1]:
+                    change = change - (np.sum(base[:n_da] + change) - p[1]) - 1
+                p_ = p.copy()
+                p_.append(tuple(change))
                 p_ = tuple(p_)
                 simulation_params.append(p_)
+                print(p_)
 
     else:
         raise ValueError("Wrong mode specified!")
@@ -85,7 +110,7 @@ def generate_compositional_datasets(n_cell_types, n_cells, n_samples,
     # Initialize output components
     out_parameters = pd.DataFrame(columns=['n_cell_types', 'n_cells',
                                            'n_controls', 'n_cases',
-                                           'Base', 'Increase', 'log-fold increase',
+                                           'Base', 'Increase',
                                            'b_true', 'w_true'])
     out_datasets = []
 
@@ -102,13 +127,16 @@ def generate_compositional_datasets(n_cell_types, n_cells, n_samples,
         datasets = []
 
         print(f"parameters {i}/{len(simulation_params)}")
+        if type(fct_change_) == tuple:
+            change_ = np.pad(fct_change_, (0, n_cell_types_ - len(fct_change_)))
+        else:
+            change_ = np.pad(fct_change_, (0, n_cell_types_ - 1))
+
         # calculate b for use in gen.generate_case_control, normalize
         b = np.round(gen.counts_from_first(fct_base_, n_cells_, n_cell_types_), 3)
         b_t = np.round(np.log(b / n_cells_), 3)
         # calculate w for use in gen.generate_case_control
-        _, w = np.round(gen.b_w_from_abs_change(b, fct_change_, n_cells_), 3)
-
-        lf_change = np.round(np.log2((fct_change_ + fct_base_) / fct_base_), 2)
+        _, w = np.round(gen.b_w_from_abs_change(b, change_, n_cells_), 3)
 
         # Generate n_repetitions datasets, add to parameter df and dataset list
         for j in range(n_repetitions):
@@ -121,7 +149,7 @@ def generate_compositional_datasets(n_cell_types, n_cells, n_samples,
 
             params = [n_cell_types_, n_cells_,
                       n_samples_[0], n_samples_[1],
-                      fct_base_, fct_change_, lf_change,
+                      fct_base_, fct_change_,
                       b_t, [w]]
             parameters = parameters.append(dict(zip(parameters.columns, params)), ignore_index=True)
 
@@ -129,7 +157,7 @@ def generate_compositional_datasets(n_cell_types, n_cells, n_samples,
         if write_path is not None and file_name is not None:
             write = {"datasets": datasets, "parameters": parameters}
 
-            with open(write_path + file_name + "_" + str(i), "wb") as f:
+            with open(write_path + "/" + file_name + "_" + str(i), "wb") as f:
                 pkl.dump(write, f)
         # Else, add generated data and parameters to output objects
         else:
@@ -142,7 +170,7 @@ def generate_compositional_datasets(n_cell_types, n_cells, n_samples,
 
     return out
 
-
+__name__="main"
 if __name__ == "main":
     # generate data for overall benchamark
 
@@ -155,7 +183,7 @@ if __name__ == "main":
     fct_change = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 400, 600, 800, 1000]
     n_repetitions = 10
 
-    write_path = os.path.realpath("../../data/overall_benchmark/generated_datasets_overall_benchmark/")
+    write_path = os.path.realpath("../../sccoda_benchmark_data/overall_benchmark/generated_datasets_overall_benchmark_test/")
     # write_path = "/home/icb/johannes.ostner/compositional_diff/benchmark_results/overall_benchmark_data/"
     file_name = "overall_data"
 
@@ -164,44 +192,25 @@ if __name__ == "main":
                                                    n_repetitions=n_repetitions, mode="absolute",
                                                    write_path=write_path, file_name=file_name)
 
-
     # generate data for model comparison benchamark
 
     np.random.seed(1234)
 
-    n_cell_types = [5]
-    n_cells = [5000]
-    n_samples = [[i+1, i+1] for i in range(10)]
-    fct_base = [200, 400, 600, 800, 1000]
-    fct_change = [1/3, 1/2, 1, 2, 3]
+    n_cell_types = [5, 10, 15]
+    n_samples = [[i + 1, i + 1] for i in range(5)]
+    fct_base = [1000]
+    fct_change = [(0, 1 / 2), (0, 1), (0, 2), (1 / 2, 1), (1 / 2, 2), (1, 2)]
     n_repetitions = 20
 
-    write_path = os.path.realpath("../../data/model_comparison/generated_datasets_model_comparison/")
+    write_path = os.path.realpath(
+        "../sccoda_benchmark_data/model_comparison_2/generated_datasets_model_comparison_2_test/") + "/"
+    # write_path = None
     # write_path = "/home/icb/johannes.ostner/compositional_diff/benchmark_results/model_comparison_data/"
-    file_name = "model_comp_data"
+    file_name = "model_comp_data_new"
 
-    comp_data = generate_compositional_datasets(n_cell_types=n_cell_types, n_cells=n_cells,
+    comp_data = generate_compositional_datasets(n_cell_types=n_cell_types, n_cells="adaptive",
                                                 n_samples=n_samples, fct_base=fct_base, fct_change=fct_change,
                                                 n_repetitions=n_repetitions, mode="relative",
                                                 write_path=write_path, file_name=file_name)
 
 
-    # generate data for threshold determination benchamark
-
-    np.random.seed(1234)
-
-    n_cell_types = np.arange(2, 16, 1).tolist()
-    n_cells = [5000]
-    n_samples = [[i+1, i+1] for i in range(10)]
-    fct_base = ["balanced"]
-    fct_change = [0.25, 0.5, 1]
-    n_repetitions = 20
-
-    write_path = os.path.realpath("../../data/threshold_determination/generated_datasets_threshold_determination")
-    # write_path = "/home/icb/johannes.ostner/compositional_diff/benchmark_results/model_comparison_data/"
-    file_name = "threshold_data"
-
-    treshold_data = generate_compositional_datasets(n_cell_types=n_cell_types, n_cells=n_cells,
-                                                    n_samples=n_samples, fct_base=fct_base, fct_change=fct_change,
-                                                    n_repetitions=n_repetitions, mode="relative",
-                                                    write_path=write_path, file_name=file_name)

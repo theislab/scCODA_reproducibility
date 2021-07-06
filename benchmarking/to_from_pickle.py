@@ -5,9 +5,10 @@ import pickle as pkl
 import os
 import anndata as ad
 import warnings
+import re
+import numpy as np
 
 warnings.filterwarnings("ignore", category=FutureWarning)
-
 
 
 def benchmark_datasets_to_csv(pickle_path, uni_path):
@@ -98,24 +99,29 @@ def benchmark_results_to_csv(pickle_path, uni_path):
 
     data_names = os.listdir(pickle_path)
 
+    effects = {}
+
     if len(data_names) > 0:
 
         all_results = []
         sccoda_effects = []
 
         for name in data_names:
-            with open(pickle_path + name, "rb") as f:
-                temp = pkl.load(f)
+            if not name == ".":
+                with open(pickle_path + name, "rb") as f:
+                    temp = pkl.load(f)
 
-            if name.startswith("sccoda"):
-                all_results.append(temp["results"])
-                sccoda_effects = sccoda_effects + temp["effects"]
 
-            elif isinstance(temp, dict):
-                all_results.append(temp["results"])
+                if name.startswith("scCODA"):
+                    all_results.append(temp["results"])
+                    sccoda_effects = sccoda_effects + temp["effects"]
 
-            else:
-                all_results.append(temp)
+                elif isinstance(temp, dict):
+                    all_results.append(temp["results"])
+
+                else:
+                    all_results.append(temp)
+
 
         all_results = pd.concat(all_results)
         all_results.to_csv(uni_path + "benchmark_results")
@@ -127,20 +133,39 @@ def benchmark_results_to_csv(pickle_path, uni_path):
         print(f"no files in {pickle_path}. skipping...")
 
 
-if __name__ == "main":
+def model_comparison_to_csv(pickle_path, uni_path):
 
-    benchmark_names = ["overall_benchmark", "model_comparison_benchmark", "threshold_determination_benchmark"]
+    test_names = pd.unique([re.sub(r"_results[_]*[0-9]*.pkl", "", x) for x in os.listdir(pickle_path)])
+    test_names = np.setdiff1d(test_names, ".DS_Store")
 
-    for name in benchmark_names:
-        print(f"Converting {name}...")
+    effects = {}
+    results = []
+    for name in test_names:
+        eff = []
+        for file in os.listdir(pickle_path):
+            if file.startswith(name):
+                with open(pickle_path + file, "rb") as f:
+                    temp = pkl.load(f)
+                if name == "ancom":
+                    for x in temp["effects"]:
+                        if type(x[0]) == bool:
+                            t = pd.DataFrame({
+                                "W": np.zeros(len(x)),
+                                "Reject null hypothesis": x
+                            })
+                            eff.append(t)
+                        else:
+                            eff.append(x[0])
+                elif name == "scdc":
+                    for x in temp["effects"]:
+                        eff.append(x.iloc[int(len(x) / 2):, :])
+                else:
+                    for x in temp["effects"]:
+                        eff.append(x)
+                results.append(temp["results"])
 
-        datasets_path = os.path.realpath(f"../../data/{name}/generated_datasets_{name}/")
-        results_path = os.path.realpath(f"../../data/{name}/{name}_results/")
-        convert_path = os.path.realpath(f"../../data/{name}/data_{name}/")
+        effects[name] = pd.concat(eff)
+        pd.concat(eff).to_csv(uni_path + f"{name}_effects")
 
-        print("Converting generated data...")
-        benchmark_datasets_to_csv(datasets_path, convert_path)
-
-        print("converting results...")
-        benchmark_results_to_csv(results_path, convert_path)
-
+    results_ = pd.concat(results)
+    results_.to_csv(uni_path + "benchmark_results")

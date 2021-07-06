@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -57,9 +58,9 @@ result_save_path = "../zenodo_data/sccoda_benchmark_data/runtime_analysis/"
 result_df.to_csv(result_save_path + "runtime_analysis_results_2")
 
 #%%
-result_save_path = "../zenodo_data/sccoda_benchmark_data/runtime_analysis/"
+result_save_path = os.path.abspath("../sccoda_benchmark_data/runtime_results/")
 
-result_df = pd.read_csv(result_save_path + "results/runtime_analysis_results_3")
+result_df = pd.read_csv(result_save_path + "/runtime_analysis_results_rev")
 plot_df = result_df.copy()
 plot_df.rename(columns={
     "n_cell_types": "Cell types",
@@ -83,8 +84,8 @@ sns.lineplot(
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., title="Samples per group")
 plt.tight_layout()
 
-# plt.savefig(result_save_path + "runtime_lines_3.png")
-# plt.savefig(result_save_path + "runtime_lines_3.svg")
+plt.savefig(result_save_path + "/runtime_lines_rev.png")
+plt.savefig(result_save_path + "/runtime_lines_rev.svg")
 
 plt.show()
 
@@ -110,3 +111,6 @@ print(result_df.loc[
 #%%
 
 print(np.max(result_df["time_per_step"]))
+#%%
+
+print(np.mean(result_df["time_per_step"]))
