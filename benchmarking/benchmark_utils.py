@@ -11,7 +11,7 @@ import rpy2
 sys.path.insert(0, '/home/icb/johannes.ostner/compositional_diff/scCODA/')
 
 from sccoda.util import data_generation as gen
-from sccoda.model import other_models as om
+# from sccoda.model import other_models as om
 from sccoda.model import scCODA_model as model
 
 
@@ -650,9 +650,8 @@ def execute_on_server(bash_loction, bash_name, script_location, arguments,
         fh.writelines(f"#SBATCH -e {bash_loction}{bash_name}_error.e\n")
         fh.writelines("#SBATCH -p cpu_p\n")
         fh.writelines("#SBATCH --constraint='avx'\n")
-        fh.writelines("#SBATCH --exclude='ibis216-010-[035-037,064]'\n")
         fh.writelines("#SBATCH -c 1\n")
-        fh.writelines("#SBATCH --mem=5000\n")
+        fh.writelines("#SBATCH --mem=32000\n")
         fh.writelines("#SBATCH --nice=10000\n")
         fh.writelines("#SBATCH -t 3-00:00:00\n")
 
