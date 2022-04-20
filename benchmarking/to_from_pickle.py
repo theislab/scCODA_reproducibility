@@ -39,7 +39,7 @@ def benchmark_datasets_to_csv(pickle_path, uni_path):
                 all_datasets[k] = d
                 k += 1
 
-        concat = ad.concat(all_datasets, label="dataset_no")
+        concat = ad.concat(all_datasets, label="dataset_no", join="outer")
         params = pd.concat(all_parameters, ignore_index=True)
 
         params.to_csv(uni_path + "generation_parameters")
@@ -65,7 +65,8 @@ def benchmark_datasets_to_pickle(uni_path, pickle_path):
     adata = ad.read_h5ad(uni_path + "generated_data")
     datasets = []
     for i in adata.obs["dataset_no"].unique():
-        datasets.append(adata[adata.obs["dataset_no"] == i].copy())
+        ada = adata[adata.obs["dataset_no"] == i].copy()
+        datasets.append(ada[:, ~(np.all(np.isnan(ada.X), axis=0))])
 
     batch_size = parameters.groupby(["Base", "Increase", "n_controls", "n_cases"]).size().iloc[0]
 
